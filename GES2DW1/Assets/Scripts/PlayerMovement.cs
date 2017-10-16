@@ -9,12 +9,18 @@ public class PlayerMovement : MonoBehaviour {
     Rigidbody2D rb2D;
     // Is the player on the ground?
     bool isOnGround;
+    // Horizontal input check
+    float horizontalInput;
+    // Check jumping
+    bool shouldJump;
+    // Jump force
+    Vector2 jumpForce;
     // Movement speed
     [SerializeField]
     float moveSpeed = 5.0f;
     // Jump strength (force added when jumping)
     [SerializeField]
-    float jumpStrength = 7.0f;
+    float jumpStrength;
     // Center point for ground detection circle
     [SerializeField]
     Transform groundDetectPoint;
@@ -31,15 +37,47 @@ public class PlayerMovement : MonoBehaviour {
         // this code teleports the game object
         //transform.position = new Vector3(0, 0, 0);
         rb2D = GetComponent<Rigidbody2D>();
-        
     }
 
     // Update is called once per frame
     void Update()
     {
+        jumpForce = new Vector2(0, jumpStrength);
+        GetMovementInput();
+        GetJumpInput();
         UpdateIsOnGround();
+    }
+
+    private void GetJumpInput()
+    {
+        if(Input.GetButtonDown("Jump") && isOnGround)
+        {
+            shouldJump = true;
+        }
+        else
+        {
+            shouldJump = false;
+        }
+    }
+
+    private void GetMovementInput()
+    {
+        horizontalInput = Input.GetAxis("Horizontal");
+    }
+
+    private void FixedUpdate()
+    {
         Move();
         Jump();
+        
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if(collision.gameObject.tag == "Rope")
+        {
+            
+        }
     }
 
     // Checks for ground below and updates the isOnGround variable accordingly
@@ -52,8 +90,6 @@ public class PlayerMovement : MonoBehaviour {
     // Player movement logic
     private void Move()
     {
-        float horizontalInput = Input.GetAxis("Horizontal");
-
         rb2D.velocity = new Vector2(horizontalInput * moveSpeed, rb2D.velocity.y);
         // Translate() doesn't use physics
         //transform.Translate(new Vector3(0.01f, 0, 0));
@@ -67,12 +103,14 @@ public class PlayerMovement : MonoBehaviour {
     // Player jump logic
     private void Jump()
     {
-        if (Input.GetButtonDown("Jump") && isOnGround)
+        if (shouldJump)
         {
             // Don't use different/amalgamate systems for movement (it's like mixing battery types)
             //transform.translate(0, 1.0f, 0);
-            rb2D.velocity = new Vector2(rb2D.velocity.x, jumpStrength);
+            //rb2D.velocity = new Vector2(rb2D.velocity.x, jumpStrength);
+            rb2D.AddForce(jumpForce, ForceMode2D.Impulse);
             isOnGround = false;
+            shouldJump = false;
         }
     }
 }
