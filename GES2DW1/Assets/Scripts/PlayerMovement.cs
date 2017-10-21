@@ -15,6 +15,10 @@ public class PlayerMovement : MonoBehaviour {
     bool shouldJump;
     // Jump force
     Vector2 jumpForce;
+    // Is the player grabbing?
+    bool isGrabbing;
+    // Grab joint
+    HingeJoint2D grab;
     // Movement speed
     [SerializeField]
     float moveSpeed = 5.0f;
@@ -45,6 +49,7 @@ public class PlayerMovement : MonoBehaviour {
         jumpForce = new Vector2(0, jumpStrength);
         GetMovementInput();
         GetJumpInput();
+        Ungrab();
         UpdateIsOnGround();
     }
 
@@ -69,14 +74,28 @@ public class PlayerMovement : MonoBehaviour {
     {
         Move();
         Jump();
-        
+    }
+
+    private void Ungrab()
+    {
+        if(Input.GetButtonDown("Jump") && isGrabbing)
+        {
+            Destroy(grab);
+            isGrabbing = false;
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
         if(collision.gameObject.tag == "Rope")
         {
-            
+            Debug.Log("Rope");
+            if(!isGrabbing)
+            {
+                grab = gameObject.AddComponent<HingeJoint2D>();
+                grab.connectedBody = collision.rigidbody;
+                isGrabbing = true;
+            }
         }
     }
 

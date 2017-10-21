@@ -14,6 +14,8 @@ public class CameraController : MonoBehaviour {
     [SerializeField]
     float yOffset;
 
+    float ymin = 0;
+    float xmin = 0;
     float zOffset = -10;
 	// Use this for initialization
 	void Start ()
@@ -25,6 +27,10 @@ public class CameraController : MonoBehaviour {
 	void Update ()
     {
         Vector3 newPosition = new Vector3(objectToFollow.position.x + xOffset, objectToFollow.position.y + yOffset, zOffset);
+        if (newPosition.x < xmin)
+            newPosition.x = xmin;
+        if (newPosition.y < ymin)
+            newPosition.y = ymin;
         transform.position = Vector3.Lerp(transform.position, newPosition, cameraFollowSpeed * Time.deltaTime);
 	}
 }
