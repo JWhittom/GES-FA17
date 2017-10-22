@@ -487,6 +487,11 @@ Prefab:
       propertyPath: m_Layer
       value: 8
       objectReference: {fileID: 0}
+    - target: {fileID: 60291185888255652, guid: caaa7fab7be72bf4bb70c9fdd7ae36c0,
+        type: 2}
+      propertyPath: m_UsedByEffector
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: caaa7fab7be72bf4bb70c9fdd7ae36c0, type: 2}
   m_IsPrefabParent: 0
@@ -579,7 +584,7 @@ MonoBehaviour:
   moveSpeed: 5
   jumpStrength: 11
   groundDetectPoint: {fileID: 1172701469}
-  groundDetectRadius: 0.3
+  groundDetectRadius: 0.35
   whatCountsAsGround:
     serializedVersion: 2
     m_Bits: 256
@@ -1899,3 +1904,26 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!1 &2134180585 stripped
+GameObject:
+  m_PrefabParentObject: {fileID: 1014038325191282, guid: caaa7fab7be72bf4bb70c9fdd7ae36c0,
+    type: 2}
+  m_PrefabInternal: {fileID: 488744769}
+--- !u!251 &2134180587
+PlatformEffector2D:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 2134180585}
+  m_Enabled: 1
+  m_UseColliderMask: 1
+  m_ColliderMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RotationalOffset: 0
+  m_UseOneWay: 0
+  m_UseOneWayGrouping: 0
+  m_SurfaceArc: 180
+  m_UseSideFriction: 0
+  m_UseSideBounce: 0
+  m_SideArc: 1
