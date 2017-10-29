@@ -60,6 +60,8 @@ public class PlayerMovement : MonoBehaviour {
     // Audio clips
     [SerializeField]
     AudioClip[] audioClips;
+    [SerializeField]
+    float pitThreshhold;
 
     // Use this for initialization
     void Start()
@@ -215,7 +217,7 @@ public class PlayerMovement : MonoBehaviour {
 
     private void Die()
     {
-        if(transform.position.y < -8)
+        if(transform.position.y < pitThreshhold)
         {
             audioSource.clip = audioClips[1];
             audioSource.Play();

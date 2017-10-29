@@ -2291,6 +2291,7 @@ MonoBehaviour:
   audioClips:
   - {fileID: 8300000, guid: d65a9a0fdb7665d498f1dbd942a6cce0, type: 3}
   - {fileID: 8300000, guid: e7d24635e1bdcfa40bf42ec1192e2996, type: 3}
+  pitThreshhold: -8
 --- !u!212 &1747348416
 SpriteRenderer:
   m_ObjectHideFlags: 0
