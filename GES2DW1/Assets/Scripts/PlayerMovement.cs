@@ -27,6 +27,12 @@ public class PlayerMovement : MonoBehaviour {
     Rigidbody2D ropeRB;
     // Ungrab Cooldown
     float grabTime;
+    // Respawn position
+    Vector3 respPos;
+    // Character direction
+    bool facingRight = true;
+    // Animator
+    Animator animator;
     // Movement speed
     [SerializeField]
     float moveSpeed = 5.0f;
@@ -51,20 +57,25 @@ public class PlayerMovement : MonoBehaviour {
     // Rope layer
     [SerializeField]
     LayerMask countsAsRope;
+    // Audio clips
+    [SerializeField]
+    AudioClip[] audioClips;
 
     // Use this for initialization
     void Start()
     {
         // this code teleports the game object
         //transform.position = new Vector3(0, 0, 0);
+        jumpForce = new Vector2(0, jumpStrength);
         rb2D = GetComponent<Rigidbody2D>();
         audioSource = GetComponent<AudioSource>();
+        animator = GetComponent<Animator>();
+        respPos = transform.position;
     }
 
     // Update is called once per frame
     void Update()
     {
-        jumpForce = new Vector2(0, jumpStrength);
         GetMovementInput();
         GetJumpInput();
         CanGrab();
@@ -94,6 +105,19 @@ public class PlayerMovement : MonoBehaviour {
     {
         Move();
         Jump();
+        Die();
+        AnimUpdate();
+    }
+
+    private void AnimUpdate()
+    {
+        if (!isGrabbing)
+            animator.SetFloat("vSpeed", rb2D.velocity.y);
+        else
+            animator.SetFloat("vSpeed", 0f);
+        animator.SetBool("grounded", isOnGround);
+        animator.SetBool("grabbing", isGrabbing);
+        animator.SetFloat("vert", Input.GetAxis("Vertical"));
     }
 
     private void CanGrab()
@@ -132,19 +156,6 @@ public class PlayerMovement : MonoBehaviour {
             isGrabbing = false;
         }
     }
-    /*
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if(collision.gameObject.tag == "Rope")
-        {
-            if(!isGrabbing)
-            {
-                grab = gameObject.AddComponent<HingeJoint2D>();
-                grab.connectedBody = collision.rigidbody;
-                isGrabbing = true;
-            }
-        }
-    }*/
 
     // Checks for ground below and updates the isOnGround variable accordingly
     private void UpdateIsOnGround()
@@ -159,7 +170,14 @@ public class PlayerMovement : MonoBehaviour {
     private void Move()
     {
         if (!isGrabbing)
+        {
             rb2D.velocity = new Vector2(horizontalInput * moveSpeed, rb2D.velocity.y);
+            if (rb2D.velocity.x > 0 && !facingRight)
+                Flip();
+            else if (rb2D.velocity.x < 0 && facingRight)
+                Flip();
+            animator.SetFloat("speed", Mathf.Abs(rb2D.velocity.x));
+        }
         else
             rb2D.AddForce(new Vector2(horizontalInput * moveSpeed * 2, 0));
         // Translate() doesn't use physics
@@ -179,10 +197,35 @@ public class PlayerMovement : MonoBehaviour {
             // Don't use different/amalgamate systems for movement (it's like mixing battery types)
             //transform.translate(0, 1.0f, 0);
             //rb2D.velocity = new Vector2(rb2D.velocity.x, jumpStrength);
+            audioSource.clip = audioClips[0];
             audioSource.Play();
             rb2D.AddForce(jumpForce, ForceMode2D.Impulse);
             isOnGround = false;
             shouldJump = false;
         }
+    }
+
+    private void Flip()
+    {
+        facingRight = !facingRight;
+        Vector3 scale = transform.localScale;
+        scale.x *= -1;
+        transform.localScale = scale;
+    }
+
+    private void Die()
+    {
+        if(transform.position.y < -8)
+        {
+            audioSource.clip = audioClips[1];
+            audioSource.Play();
+            transform.position = respPos;
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.tag == "Respawn")
+            respPos = collision.gameObject.transform.position;
     }
 }
