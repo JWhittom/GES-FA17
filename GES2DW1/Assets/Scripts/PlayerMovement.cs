@@ -2,66 +2,89 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerMovement : MonoBehaviour {
     
-    // Rigidbody for 2D Physics
-    Rigidbody2D rb2D;
-    // Audio Source
-    AudioSource audioSource;
-    // Is the player on the ground?
-    bool isOnGround;
-    // Horizontal input check
-    float horizontalInput;
-    // Check jumping
-    bool shouldJump;
-    // Jump force
-    Vector2 jumpForce;
-    // Can the player grab?
-    bool canGrab;
-    // Is the player grabbing?
-    bool isGrabbing;
-    // Grab joint
-    HingeJoint2D grab;
-    // Object to grab
-    Rigidbody2D ropeRB;
-    // Ungrab Cooldown
-    float grabTime;
-    // Respawn position
-    Vector3 respPos;
-    // Character direction
-    bool facingRight = true;
+    // Public variables
+
+    // Win state enabled
+    public bool canWin;
+
+    // Private variables
+
     // Animator
     Animator animator;
-    // Movement speed
+    // Audio Source
+    AudioSource audioSource;
+    // Can the player control the character?
+    bool canControl;
+    // Can the player grab?
+    bool canGrab;
+    // Should the scene change?
+    bool changeScene;
+    // Character direction
+    bool facingRight = true;
+    // Is the player grabbing?
+    bool isGrabbing;
+    // Is the player on the ground?
+    bool isOnGround;
+    // Check jumping
+    bool shouldJump;
+    // Length of timer
+    float changeTime = 2.0f;
+    // Timer for scene change
+    float changeTimeStart = 0.0f;
+    // Ungrab Cooldown
+    float grabTime;
+    // Horizontal input check
+    float horizontalInput;
+    // Grab joint
+    HingeJoint2D grab;
+    // Rigidbody for 2D Physics
+    Rigidbody2D rb2D;
+    // Object to grab
+    Rigidbody2D ropeRB;
+    // Jump force
+    Vector2 jumpForce;
+    // Respawn position
+    Vector3 respPos;
+
+    // SerializeFields
+
+    // Audio clips
     [SerializeField]
-    float moveSpeed = 5.0f;
-    // Jump strength (force added when jumping)
-    [SerializeField]
-    float jumpStrength;
-    // Center point for ground detection circle
-    [SerializeField]
-    Transform groundDetectPoint;
+    AudioClip[] audioClips;
     // Radius for ground detection circle
     [SerializeField]
     float groundDetectRadius = 0.25f;
-    // Ground layer
+    // Jump strength (force added when jumping)
     [SerializeField]
-    LayerMask whatCountsAsGround;
-    // Center point for rope detection circle
+    float jumpStrength;
+    // Movement speed
     [SerializeField]
-    Transform ropeCheck;
+    float moveSpeed = 5.0f;
+    // Y value for bottomless pit death
+    [SerializeField]
+    float pitThreshhold;
     // Rope detection radius
     [SerializeField]
     float ropeRad = 0.55f;
     // Rope layer
     [SerializeField]
     LayerMask countsAsRope;
-    // Audio clips
+    // Ground layer
     [SerializeField]
-    AudioClip[] audioClips;
+    LayerMask whatCountsAsGround;
+    // Name of next scene
     [SerializeField]
-    float pitThreshhold;
+    string nextScene;
+    // Center point for ground detection circle
+    [SerializeField]
+    Transform groundDetectPoint;
+    // Center point for rope detection circle
+    [SerializeField]
+    Transform ropeCheck;
 
     // Use this for initialization
     void Start()
@@ -73,6 +96,7 @@ public class PlayerMovement : MonoBehaviour {
         audioSource = GetComponent<AudioSource>();
         animator = GetComponent<Animator>();
         respPos = transform.position;
+        canControl = true;
     }
 
     // Update is called once per frame
@@ -86,6 +110,95 @@ public class PlayerMovement : MonoBehaviour {
         UpdateIsOnGround();
     }
 
+    // FixedUpdate is called once every 50th of a second
+    private void FixedUpdate()
+    {
+        if (canControl)
+        {
+            Move();
+            Jump();
+            if (transform.position.y < pitThreshhold)
+                Die();
+            AnimUpdate();
+        }
+        if(changeScene)
+        {
+            if (changeTimeStart == 0.0f)
+                changeTimeStart = Time.time;
+            Debug.Log(changeTimeStart);
+            if (Time.time - changeTimeStart >= changeTime)
+            {
+                Debug.Log(Time.time);
+                SceneManager.LoadScene(nextScene);
+            }
+        }
+    }
+
+    // Called when the player enters a trigger
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.tag == "Respawn")
+            respPos = collision.gameObject.transform.position;
+        if (collision.gameObject.tag == "Victory" && canWin && isOnGround)
+        {
+            AudioSource win = collision.gameObject.GetComponent<AudioSource>();
+            canControl = false;
+            win.Play();
+            animator.SetFloat("vert", 1f);
+            animator.SetFloat("speed", 0.0f);
+            changeScene = true;
+        }
+    }
+
+    // Update animator variables
+    private void AnimUpdate()
+    {
+        if (!isGrabbing)
+            animator.SetFloat("vSpeed", rb2D.velocity.y);
+        else
+            animator.SetFloat("vSpeed", 0f);
+        animator.SetBool("grounded", isOnGround);
+        animator.SetBool("grabbing", isGrabbing);
+        animator.SetFloat("vert", Input.GetAxis("Vertical"));
+    }
+
+    // Check grab state
+    private void CanGrab()
+    {
+        Collider2D[] ropeObjects = Physics2D.OverlapCircleAll(ropeCheck.position, ropeRad, countsAsRope);
+        if (ropeObjects.Length > 0 && !isGrabbing)
+        {
+            canGrab = true;
+            ropeRB = ropeObjects[0].attachedRigidbody;
+        }
+        else
+        {
+            canGrab = false;
+            ropeRB = null;
+        }
+    }
+
+    // Play death sound/animation and respawn player
+    private void Die()
+    {
+        audioSource.clip = audioClips[1];
+        audioSource.Play();
+        animator.SetBool("die", true);
+        rb2D.velocity = new Vector2(0f, 0f);
+        transform.position = respPos;
+        animator.SetBool("die", false);
+    }
+
+    // Flip player horizontally
+    private void Flip()
+    {
+        facingRight = !facingRight;
+        Vector3 scale = transform.localScale;
+        scale.x *= -1;
+        transform.localScale = scale;
+    }
+
+    // Take jump input
     private void GetJumpInput()
     {
         if(Input.GetButtonDown("Jump") && isOnGround)
@@ -98,45 +211,13 @@ public class PlayerMovement : MonoBehaviour {
         }
     }
 
+    // Take movement input
     private void GetMovementInput()
     {
         horizontalInput = Input.GetAxis("Horizontal");
     }
-
-    private void FixedUpdate()
-    {
-        Move();
-        Jump();
-        Die();
-        AnimUpdate();
-    }
-
-    private void AnimUpdate()
-    {
-        if (!isGrabbing)
-            animator.SetFloat("vSpeed", rb2D.velocity.y);
-        else
-            animator.SetFloat("vSpeed", 0f);
-        animator.SetBool("grounded", isOnGround);
-        animator.SetBool("grabbing", isGrabbing);
-        animator.SetFloat("vert", Input.GetAxis("Vertical"));
-    }
-
-    private void CanGrab()
-    {
-        Collider2D[] ropeObjects = Physics2D.OverlapCircleAll(ropeCheck.position, ropeRad, countsAsRope);
-        if(ropeObjects.Length > 0 && !isGrabbing)
-        {
-            canGrab = true;
-            ropeRB = ropeObjects[0].attachedRigidbody;
-        }
-        else
-        {
-            canGrab = false;
-            ropeRB = null;
-        }
-    }
-
+    
+    // Grab a rope
     private void Grab()
     {
         if(Input.GetButtonDown("Jump") && canGrab)
@@ -149,23 +230,20 @@ public class PlayerMovement : MonoBehaviour {
         }
     }
 
-    private void UnGrab()
+    // Player jump logic
+    private void Jump()
     {
-        if(Input.GetButtonDown("Jump") && isGrabbing && Time.time - grabTime > .5f)
+        if (shouldJump)
         {
-            Destroy(grab);
-            ropeRB = null;
-            isGrabbing = false;
+            // Don't use different/amalgamate systems for movement (it's like mixing battery types)
+            //transform.translate(0, 1.0f, 0);
+            //rb2D.velocity = new Vector2(rb2D.velocity.x, jumpStrength);
+            audioSource.clip = audioClips[0];
+            audioSource.Play();
+            rb2D.AddForce(jumpForce, ForceMode2D.Impulse);
+            isOnGround = false;
+            shouldJump = false;
         }
-    }
-
-    // Checks for ground below and updates the isOnGround variable accordingly
-    private void UpdateIsOnGround()
-    {
-        Collider2D[] groundObjects = Physics2D.OverlapCircleAll(groundDetectPoint.position, groundDetectRadius, whatCountsAsGround);
-        isOnGround = groundObjects.Length > 0;
-        if (isGrabbing)
-            isOnGround = true;
     }
 
     // Player movement logic
@@ -190,44 +268,23 @@ public class PlayerMovement : MonoBehaviour {
         //    transform.Translate(new Vector3(-0.1f, 0, 0));
         //}
     }
-    
-    // Player jump logic
-    private void Jump()
+
+    private void UnGrab()
     {
-        if (shouldJump)
+        if(Input.GetButtonDown("Jump") && isGrabbing && Time.time - grabTime > .5f)
         {
-            // Don't use different/amalgamate systems for movement (it's like mixing battery types)
-            //transform.translate(0, 1.0f, 0);
-            //rb2D.velocity = new Vector2(rb2D.velocity.x, jumpStrength);
-            audioSource.clip = audioClips[0];
-            audioSource.Play();
-            rb2D.AddForce(jumpForce, ForceMode2D.Impulse);
-            isOnGround = false;
-            shouldJump = false;
+            Destroy(grab);
+            ropeRB = null;
+            isGrabbing = false;
         }
     }
 
-    private void Flip()
+    // Checks for ground below and updates the isOnGround variable accordingly
+    private void UpdateIsOnGround()
     {
-        facingRight = !facingRight;
-        Vector3 scale = transform.localScale;
-        scale.x *= -1;
-        transform.localScale = scale;
-    }
-
-    private void Die()
-    {
-        if(transform.position.y < pitThreshhold)
-        {
-            audioSource.clip = audioClips[1];
-            audioSource.Play();
-            transform.position = respPos;
-        }
-    }
-
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.gameObject.tag == "Respawn")
-            respPos = collision.gameObject.transform.position;
+        Collider2D[] groundObjects = Physics2D.OverlapCircleAll(groundDetectPoint.position, groundDetectRadius, whatCountsAsGround);
+        isOnGround = groundObjects.Length > 0;
+        if (isGrabbing)
+            isOnGround = true;
     }
 }
