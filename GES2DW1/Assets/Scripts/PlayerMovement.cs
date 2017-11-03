@@ -35,6 +35,8 @@ public class PlayerMovement : MonoBehaviour {
     float changeTime = 2.0f;
     // Timer for scene change
     float changeTimeStart = 0.0f;
+    // Timer for death
+    float dieTime = 1.0f;
     // Ungrab Cooldown
     float grabTime;
     // Horizontal input check
@@ -117,21 +119,27 @@ public class PlayerMovement : MonoBehaviour {
         {
             Move();
             Jump();
-            if (transform.position.y < pitThreshhold)
-                Die();
             AnimUpdate();
         }
-        if(changeScene)
+        if (transform.position.y < pitThreshhold)
+            Die();
+        if (changeScene)
         {
             if (changeTimeStart == 0.0f)
                 changeTimeStart = Time.time;
             Debug.Log(changeTimeStart);
             if (Time.time - changeTimeStart >= changeTime)
             {
-                Debug.Log(Time.time);
                 SceneManager.LoadScene(nextScene);
             }
         }
+    }
+
+    // Called when the player collides
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Spikes"))
+            Die();
     }
 
     // Called when the player enters a trigger
@@ -182,11 +190,22 @@ public class PlayerMovement : MonoBehaviour {
     private void Die()
     {
         audioSource.clip = audioClips[1];
-        audioSource.Play();
         animator.SetBool("die", true);
-        rb2D.velocity = new Vector2(0f, 0f);
-        transform.position = respPos;
-        animator.SetBool("die", false);
+        Debug.Log(Time.time - changeTimeStart);
+        if (changeTimeStart == 0.0f)
+        {
+            audioSource.Play();
+            canControl = false;
+            changeTimeStart = Time.time;
+            rb2D.velocity = new Vector2(0f, 0f);
+        }
+        if (Time.time - changeTimeStart >= dieTime)
+        {
+            transform.position = respPos;
+            animator.SetBool("die", false);
+            changeTimeStart = 0.0f;
+            canControl = true;
+        }
     }
 
     // Flip player horizontally
