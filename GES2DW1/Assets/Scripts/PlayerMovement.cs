@@ -29,14 +29,20 @@ public class PlayerMovement : MonoBehaviour {
     bool isGrabbing;
     // Is the player on the ground?
     bool isOnGround;
+    // Check death
+    bool shouldDie;
     // Check jumping
     bool shouldJump;
+    // Collision Data
+    BoxCollider2D boxCol;
     // Length of timer
     float changeTime = 2.0f;
     // Timer for scene change
     float changeTimeStart = 0.0f;
-    // Timer for death
+    // Length for death
     float dieTime = 1.0f;
+    // Timer for death
+    float dieTimeStart;
     // Ungrab Cooldown
     float grabTime;
     // Horizontal input check
@@ -97,6 +103,7 @@ public class PlayerMovement : MonoBehaviour {
         rb2D = GetComponent<Rigidbody2D>();
         audioSource = GetComponent<AudioSource>();
         animator = GetComponent<Animator>();
+        boxCol = GetComponent<BoxCollider2D>();
         respPos = transform.position;
         canControl = true;
     }
@@ -106,6 +113,7 @@ public class PlayerMovement : MonoBehaviour {
     {
         GetMovementInput();
         GetJumpInput();
+        checkDie();
         CanGrab();
         Grab();
         UnGrab();
@@ -121,15 +129,16 @@ public class PlayerMovement : MonoBehaviour {
             Jump();
             AnimUpdate();
         }
-        if (transform.position.y < pitThreshhold)
+        if (shouldDie)
             Die();
         if (changeScene)
         {
             if (changeTimeStart == 0.0f)
                 changeTimeStart = Time.time;
-            Debug.Log(changeTimeStart);
             if (Time.time - changeTimeStart >= changeTime)
             {
+                Key.keyCount = 0;
+                Key.totalKeys = 0;
                 SceneManager.LoadScene(nextScene);
             }
         }
@@ -139,7 +148,7 @@ public class PlayerMovement : MonoBehaviour {
     private void OnCollisionStay2D(Collision2D collision)
     {
         if (collision.gameObject.layer == LayerMask.NameToLayer("Spikes"))
-            Die();
+            shouldDie = true;
     }
 
     // Called when the player enters a trigger
@@ -186,25 +195,32 @@ public class PlayerMovement : MonoBehaviour {
         }
     }
 
+    // Check for death state
+    private void checkDie()
+    {
+        if (transform.position.y < pitThreshhold || (dieTimeStart != 0 && Time.time - dieTimeStart >= dieTime) || Input.GetButtonDown("Fire1"))
+            shouldDie = true;
+    }
+
     // Play death sound/animation and respawn player
     private void Die()
     {
         audioSource.clip = audioClips[1];
         animator.SetBool("die", true);
-        Debug.Log(Time.time - changeTimeStart);
-        if (changeTimeStart == 0.0f)
+        if (dieTimeStart == 0.0f)
         {
             audioSource.Play();
             canControl = false;
-            changeTimeStart = Time.time;
+            dieTimeStart = Time.time;
             rb2D.velocity = new Vector2(0f, 0f);
         }
-        if (Time.time - changeTimeStart >= dieTime)
+        if (Time.time - dieTimeStart >= dieTime)
         {
             transform.position = respPos;
             animator.SetBool("die", false);
-            changeTimeStart = 0.0f;
+            dieTimeStart = 0.0f;
             canControl = true;
+            shouldDie = false;
         }
     }
 
@@ -295,6 +311,7 @@ public class PlayerMovement : MonoBehaviour {
             Destroy(grab);
             ropeRB = null;
             isGrabbing = false;
+            boxCol.enabled = false;
         }
     }
 
@@ -303,6 +320,7 @@ public class PlayerMovement : MonoBehaviour {
     {
         Collider2D[] groundObjects = Physics2D.OverlapCircleAll(groundDetectPoint.position, groundDetectRadius, whatCountsAsGround);
         isOnGround = groundObjects.Length > 0;
+        boxCol.enabled = true;
         if (isGrabbing)
             isOnGround = true;
     }

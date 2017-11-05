@@ -6,8 +6,8 @@ using UnityEngine.UI;
 
 public class Key : MonoBehaviour {
 
-    static int keyCount = 0;
-    static int totalKeys = 0;
+    public static int keyCount = 0;
+    public static int totalKeys = 0;
     AudioSource audioSource;
     SpriteRenderer spriteRenderer;
     BoxCollider2D boxCol;
