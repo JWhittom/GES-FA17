@@ -198,7 +198,7 @@ public class PlayerMovement : MonoBehaviour {
     // Check for death state
     private void checkDie()
     {
-        if (transform.position.y < pitThreshhold || (dieTimeStart != 0 && Time.time - dieTimeStart >= dieTime) || Input.GetButtonDown("Fire1"))
+        if (transform.position.y < pitThreshhold || (dieTimeStart != 0 && Time.time - dieTimeStart >= dieTime))
             shouldDie = true;
     }
 

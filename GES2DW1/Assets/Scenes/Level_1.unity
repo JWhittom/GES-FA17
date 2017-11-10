@@ -762,6 +762,8 @@ MonoBehaviour:
   cameraFollowSpeed: 5
   xOffset: 0
   yOffset: 0
+  xmax: 1000
+  ymax: 1000
 --- !u!50 &727010528 stripped
 Rigidbody2D:
   m_PrefabParentObject: {fileID: 50379633749594428, guid: f019d0834bc2cb0479de1f4b2f97b9a5,
@@ -1321,7 +1323,7 @@ PlatformEffector2D:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RotationalOffset: 0
-  m_UseOneWay: 0
+  m_UseOneWay: 1
   m_UseOneWayGrouping: 0
   m_SurfaceArc: 180
   m_UseSideFriction: 0
